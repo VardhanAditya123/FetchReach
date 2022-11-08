@@ -1,3 +1,4 @@
+from certifi import core
 import numpy as np
 import scipy.signal
 
@@ -12,6 +13,7 @@ def combined_shape(length, shape=None):
 
 def mlp(sizes, activation, output_activation=nn.Identity):
     layers = []
+    print(sizes)
     for j in range(len(sizes)-1):
         act = activation if j < len(sizes)-2 else output_activation
         layers += [nn.Linear(sizes[j], sizes[j+1]), act()]
@@ -24,23 +26,38 @@ class MLPActor(nn.Module):
 
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation, act_limit):
         super().__init__()
-        pi_sizes = [obs_dim] + list(hidden_sizes) + [act_dim]
-        self.pi = mlp(pi_sizes, activation, nn.Tanh)
+
+        input_size = [obs_dim]+[hidden_sizes[0]]
+        output_size = [hidden_sizes[0]]+[act_dim]
+       
         self.act_limit = act_limit
+        
+        self.input = mlp(input_size,activation,activation)
+        self.core =  mlp(list(hidden_sizes),activation,activation)
+        self.output = mlp(output_size,activation,nn.Tanh)
 
     def forward(self, obs):
         # Return output from network scaled to action space limits.
-        return self.act_limit * self.pi(obs)
+        input_value = self.input(obs)
+        core_value = self.core(input_value)
+        output_value = self.output(core_value)
+        return self.act_limit * output_value
 
 class MLPQFunction(nn.Module):
 
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
-        self.q = mlp([obs_dim + act_dim] + list(hidden_sizes) + [1], activation)
+        input_size = [obs_dim + act_dim] +  [hidden_sizes[0]]
+        core_size = [hidden_sizes[0]] + [8] + [1]
+        
+        self.input = mlp(input_size,activation,activation)
+        self.core =  mlp(core_size,activation)
+        
 
     def forward(self, obs, act):
-        q = self.q(torch.cat([obs, act], dim=-1))
-        return torch.squeeze(q, -1) # Critical to ensure q has right shape.
+        input_value = self.input(torch.cat([obs, act], dim=-1))
+        core_value = self.core(input_value)
+        return torch.squeeze(core_value,-1)
 
 class MLPActorCritic(nn.Module):
 

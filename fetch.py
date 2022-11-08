@@ -33,7 +33,7 @@ def get_action(o, noise_scale):
     act_dim = env.action_space.shape[0]
     a = anetwork(torch.as_tensor(o, dtype=torch.float32)).detach().numpy()
     # a += noise_scale * np.random.randn(act_dim)
-    a = (1-noise_scale)*a  + noise_scale * np.random.randn(act_dim)
+    # a = (1-noise_scale)*a  + noise_scale * np.random.randn(act_dim)
     return np.clip(a, -act_limit, act_limit)
 
 def compute_loss_q(data):
@@ -80,7 +80,7 @@ def main():
     goals = []
     observation,ep_ret,ep_len = env.reset(),0,0
     
-    for episode in range(400):
+    for episode in range(700):
         print(episode)
         if(episode == start_episodes):
             observation,ep_ret,ep_len = env.reset(),0,0
@@ -126,7 +126,9 @@ def main():
             if(steps  % 1 == 0 and episode > 200):
                update(replay_buffer)
     
-    torch.save(anetwork, 'anetwork.pth')        
+    torch.save(anetwork, 'anetwork.pth')
+    torch.save(anetwork.core,'/Users/vardhan/Desktop/CS390/SpaceRobotEnv-main/fetch_core_a.pth')
+    torch.save(qnetwork.core,'/Users/vardhan/Desktop/CS390/SpaceRobotEnv-main/fetch_core_q.pth')              
     # while(1):
     #     test_agent()
             
