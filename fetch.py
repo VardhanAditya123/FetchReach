@@ -80,7 +80,7 @@ def main():
     goals = []
     observation,ep_ret,ep_len = env.reset(),0,0
     
-    for episode in range(500):
+    for episode in range(600):
         print(episode)
         if(episode == start_episodes):
             observation,ep_ret,ep_len = env.reset(),0,0
